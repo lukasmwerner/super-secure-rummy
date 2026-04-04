@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	partialCardBorder = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder(), true, true, false, true).
-				Width(width + 2)
+	halfCardBorder = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder(), true, true, false, true).
+			Width(width + 2)
 	fullCardBorder = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder())
 	fillerStyle = lipgloss.NewStyle().
@@ -61,8 +61,32 @@ func cardDesign(s Suit, rank string, bg string) string {
 	return fullCardBorder.Render(contents)
 }
 
+func halfCardDesign(active bool, s Suit, rank string, bg string) string {
+	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
+	if s == Diamond || s == Heart {
+		style = redCard
+	}
+	height := (fullHeight / 2) - 1
+	if active {
+		height += 1
+	}
+
+	left := lipgloss.PlaceVertical(height, lipgloss.Top, style.Render(string(s)))
+	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(rank), left)
+
+	filler := fillerStyle.Width(width).Render("")
+
+	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, " ")
+	return halfCardBorder.Render(contents)
+
+}
+
 func CardLayer(s Suit, rank string, bg string) *lipgloss.Layer {
 	return lipgloss.NewLayer(cardDesign(s, rank, bg))
+}
+
+func HalfCardLayer(active bool, s Suit, rank string, bg string) *lipgloss.Layer {
+	return lipgloss.NewLayer(halfCardDesign(active, s, rank, bg))
 }
 
 func DrawPile() *lipgloss.Layer {

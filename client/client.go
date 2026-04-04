@@ -90,10 +90,10 @@ func (m Model) View() tea.View {
 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, meld, " ", meld)
 
 	hand_cards := []*lipgloss.Layer{
-		card.CardLayer(card.Club, "A", m.Bg).Y(1),
-		card.CardLayer(card.Heart, "2", m.Bg).Y(1),
-		card.CardLayer(card.Diamond, "J", m.Bg).Y(0),
-		card.CardLayer(card.Spade, "4", m.Bg).Y(0),
+		card.HalfCardLayer(false, card.Club, "A", m.Bg).Y(1),
+		card.HalfCardLayer(true, card.Heart, "2", m.Bg).Y(0),
+		card.HalfCardLayer(false, card.Diamond, "J", m.Bg).Y(1),
+		card.HalfCardLayer(false, card.Spade, "4", m.Bg).Y(1),
 	}
 	hand := lipgloss.NewCompositor(
 		IMap(hand_cards, func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
