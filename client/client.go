@@ -107,7 +107,7 @@ func (m Model) View() tea.View {
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("62")).
 			PaddingRight(2)
-		vp.SetContent(fmt.Sprintf("Welcome to Secure Rummy!\nHere are the basic commands:\n ...\n"))
+		vp.SetContent(fmt.Sprintf("Welcome to Secure Rummy!\nHere are the basic commands:\n (+/-): change stack heights\n (up/down): change hand card count\n"))
 		//vp.View()
 
 		v := tea.NewView(lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, vp.View()))
@@ -135,8 +135,6 @@ func (m Model) View() tea.View {
 			setBuilder[j]...,
 		))
 	}
-
-	//setBuilder[len(setBuilder)-1] = card.FullCard(card.Spade, strconv.Itoa(13), m.Bg)
 
 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set...)
 
