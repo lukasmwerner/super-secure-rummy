@@ -27,18 +27,18 @@ type Model struct {
 	Quit_text_style lipgloss.Style
 	Help            bool
 	State           game.State
-	Temp            int
+	MeldLen         int
+	HandLen         int
+	//state           sessionState
 }
 
 func (m Model) Init() tea.Cmd {
-	m.State.Hand[m.PubKey] = []card.Card{}
+	m.State.Hand[m.PubKey] = []*lipgloss.Layer{}
+	m.HandLen = 7
 	// init game state with data
 	for i := 0; i < 7; i++ {
-
-		c := card.Card{
-			Suit: card.SuitMap[rand.Intn(4)],
-			Rank: strconv.Itoa(rand.Intn(13) + 1),
-		}
+		// card.HalfCardLayer(false, card.SuitMap[j], strconv.Itoa(i), m.Bg)
+		c := card.HalfCardLayer(false, card.SuitMap[rand.Intn(4)], strconv.Itoa(rand.Intn(13)+1), m.Bg)
 
 		m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
 	}
@@ -71,22 +71,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "?":
 			m.Help = true
 		case "up":
-			c := card.Card{
-				Suit: card.SuitMap[rand.Intn(4)],
-				Rank: strconv.Itoa(rand.Intn(13) + 1),
+			if m.HandLen < 12 {
+				m.HandLen++
+				c := card.HalfCardLayer(false, card.SuitMap[rand.Intn(4)], strconv.Itoa(rand.Intn(13)+1), m.Bg)
+				m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
 			}
-			m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
 		case "down":
-			if len(m.State.Hand[m.PubKey]) > 0 {
+			if m.HandLen > 0 {
+				m.HandLen--
 				m.State.Hand[m.PubKey] = m.State.Hand[m.PubKey][:len(m.State.Hand[m.PubKey])-1]
 			}
 		case "-":
-			if m.Temp > 0 {
-				m.Temp--
+			if m.MeldLen > 0 {
+				m.MeldLen--
 			}
 		case "+", "=":
-			if m.Temp < 13 {
-				m.Temp++
+			if m.MeldLen < 13 {
+				m.MeldLen++
 			}
 		}
 	}
@@ -112,64 +113,47 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.temp: %d\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.Temp)
+	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.meldlen: %d\n m.handlen %d\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.MeldLen, m.HandLen)
 
-	// <<<<<<< sessions
-	// 	var setBuilder [][]string
-	// 	var set = []string{}
-	// 	for j := 0; j < 4; j++ {
-	// 		setBuilder = append(setBuilder, []string{})
-	// 		for i := 1; i < m.Temp+1; i++ {
-	// 			if i == m.Temp {
-	// 				setBuilder[j] = append(setBuilder[j], card.FullCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
-	// 			} else {
-	// 				setBuilder[j] = append(setBuilder[j], card.PartialCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
-	// 			}
-	// 		}
+	var meldBuilder [][]*lipgloss.Layer
 
-	// 		set = append(set, lipgloss.JoinVertical(
-	// 			lipgloss.Left,
-	// 			setBuilder[j]...,
-	// 		))
-	// 	}
+	var meld []string
 
-	// 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set...)
+	for j := 0; j < 4; j++ {
+		meldBuilder = append(meldBuilder, []*lipgloss.Layer{})
+		for i := 1; i < m.MeldLen+1; i++ {
+			if i == m.MeldLen {
+				meldBuilder[j] = append(meldBuilder[j], card.CardLayer(card.SuitMap[j], strconv.Itoa(i), m.Bg))
+			} else {
+				meldBuilder[j] = append(meldBuilder[j], card.HalfCardLayer(false, card.SuitMap[j], strconv.Itoa(i), m.Bg))
+			}
+		}
 
-	// 	// helpInfo := helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n"))
-	// 	// + m.Quit_text_style.Render(helpInfo)
-	// 	var handBuilder []string
+		meld = append(meld, lipgloss.NewCompositor(
+			IMap(meldBuilder[j], func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.Y(i * 3).Z(i) })...,
+		).Render())
 
-	// 	for i := 0; i < len(m.State.Hand[m.PubKey]); i++ {
-	// 		handBuilder = append(handBuilder, card.PartialCard(m.State.Hand[m.PubKey][i].Suit, m.State.Hand[m.PubKey][i].Rank, m.Bg))
-	// 	}
-
-	// 	currentHand := lipgloss.JoinHorizontal(
-	// 		lipgloss.Bottom,
-	// 		handBuilder...,
-	// 	)
-
-	// 	centerHand := lipgloss.PlaceHorizontal(m.Width, lipgloss.Center, currentHand)
-	// =======
-	meld_cards := []*lipgloss.Layer{
-		card.CardLayer(card.Spade, "K", m.Bg),
-		card.CardLayer(card.Spade, "Q", m.Bg),
-		card.CardLayer(card.Spade, "J", m.Bg),
-		card.CardLayer(card.Spade, "10", m.Bg),
 	}
-	meld := lipgloss.NewCompositor(
-		IMap(meld_cards, func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.Y(i * 3).Z(i) })...,
-	).Render()
-	stacks := lipgloss.JoinHorizontal(lipgloss.Top, meld, " ", meld)
 
-	hand_cards := []*lipgloss.Layer{
-		card.HalfCardLayer(false, card.Club, "4", m.Bg).Y(1),
-		card.HalfCardLayer(true, card.Heart, "2", m.Bg).Y(0),
-		card.HalfCardLayer(false, card.Diamond, "J", m.Bg).Y(1),
-		card.HalfCardLayer(false, card.Spade, "10", m.Bg).Y(1),
-	}
+	stacks := lipgloss.JoinHorizontal(lipgloss.Top, meld...)
+
+	//initialLen := len(m.State.Hand[m.PubKey])
+
+	//for i := 0; i < m.HandLen; i++ {
+	//	m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], card.HalfCardLayer(false, card.SuitMap[rand.Intn(4)], strconv.Itoa(rand.Intn(13)+1), m.Bg))
+	//}
+
+	//hand_cards := []*lipgloss.Layer{
+	//	card.HalfCardLayer(false, card.Club, "A", m.Bg).Y(1),
+	//	card.HalfCardLayer(true, card.Heart, "2", m.Bg).Y(0),
+	//	card.HalfCardLayer(false, card.Diamond, "J", m.Bg).Y(1),
+	//	card.HalfCardLayer(false, card.Spade, "4", m.Bg).Y(1),
+	//}
+
 	hand := lipgloss.NewCompositor(
-		IMap(hand_cards, func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
+		IMap(m.State.Hand[m.PubKey], func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
 	)
+
 	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dy()) / 2)
 	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), hand.Render())
 	// >>>>>>> main

@@ -73,6 +73,7 @@ func halfCardDesign(active bool, s Suit, rank string, bg string) string {
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
+
 	height := (fullHeight / 2) - 1
 	if active {
 		height += 1

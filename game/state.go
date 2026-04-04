@@ -1,7 +1,7 @@
 package game
 
 import (
-	"github.com/lukasmwerner/super-secure-rummy/card"
+	"charm.land/lipgloss/v2"
 )
 
 type Game struct {
@@ -10,8 +10,8 @@ type Game struct {
 }
 
 type State struct {
-	Hand    map[string][]card.Card
-	Discard []card.Card
-	Draw    []card.Card
-	Melds   map[string][]card.Card
+	Hand    map[string][]*lipgloss.Layer
+	Discard []*lipgloss.Layer
+	Draw    []*lipgloss.Layer
+	Melds   map[string][]*lipgloss.Layer
 }
