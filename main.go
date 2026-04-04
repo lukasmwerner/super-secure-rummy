@@ -117,5 +117,6 @@ func (m term_model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m term_model) View() tea.View {
 	s := fmt.Sprintf("Your term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", m.term, m.width, m.height, m.bg, m.color_profile)
 	v := tea.NewView(m.text_style.Render(s) + "\n\n" + m.quit_text_style.Render("Press 'q' to quit\n"))
+	v.AltScreen = true
 	return v
 }
