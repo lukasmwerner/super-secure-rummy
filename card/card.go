@@ -42,47 +42,30 @@ func adaptiveColor(bg string, light color.Color, dark color.Color) color.Color {
 	return light
 }
 
-func FullCard(s Suit, r string, bg string) string {
+func cardDesign(s Suit, rank string, bg string) string {
 	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
 
 	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(string(s)))
-	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(r), left)
+	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(rank), left)
 
 	// TODO: properly render the middle design of the card
-	filler := fillerStyle.Render(" ")
+	filler := fillerStyle.Render("")
 
 	right := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Bottom, style.Render(string(s)))
-	right = lipgloss.JoinVertical(lipgloss.Right, right, style.Render(r))
+	right = lipgloss.JoinVertical(lipgloss.Right, right, style.Render(rank))
 
 	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, right)
 	return fullCardBorder.Render(contents)
-
 }
 
-func PartialCard(s Suit, r string, bg string) string {
-	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
-	if s == Diamond || s == Heart {
-		style = redCard
-	}
-
-	contents := style.Render(r) + "\n" + style.Render(string(s))
-	return partialCardBorder.Render(contents)
+func CardLayer(s Suit, rank string, bg string) *lipgloss.Layer {
+	return lipgloss.NewLayer(cardDesign(s, rank, bg))
 }
 
-func RaisedCard(s Suit, r string, bg string) string {
-	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
-	if s == Diamond || s == Heart {
-		style = redCard
-	}
-	contents := style.Render(r) + "\n" + style.Render(string(s)) + "\n\n"
-	return partialCardBorder.Render(contents)
-
-}
-
-func DrawPile() string {
+func DrawPile() *lipgloss.Layer {
 	blankCard := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(width + 2).Height(fullHeight + 2)
-	return blankCard.Render(" ")
+	return lipgloss.NewLayer(blankCard.Render(""))
 }
