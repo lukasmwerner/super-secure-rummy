@@ -19,8 +19,12 @@ import (
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/lukasmwerner/secure-rummy/card"
 	"github.com/lukasmwerner/secure-rummy/client"
+	"github.com/lukasmwerner/secure-rummy/game"
 )
+
+var states = map[uint64]game.State{}
 
 func main() {
 
@@ -35,6 +39,9 @@ func main() {
 
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
+		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+			return true
+		}),
 		ssh.AllocatePty(),
 		wish.WithMiddleware(
 			bubbletea.Middleware(teaHandler),
@@ -72,13 +79,27 @@ func main() {
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 
+	pubKey := s.PublicKey()
+
+	// pubBytes := pubKey.Marshal()
+
+	states[1234] = game.State{
+		Hand:    map[ssh.PublicKey][]card.Card{},
+		Discard: []card.Card{},
+		Draw:    []card.Card{},
+		Melds:   map[ssh.PublicKey][]card.Card{},
+	}
+
 	t := client.Model{
+		PubKey:          pubKey,
 		Term:            pty.Term,
 		Width:           pty.Window.Width,
 		Height:          pty.Window.Height,
 		Text_style:      lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
 		Quit_text_style: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Help:            false,
+		State:           states[1234],
+		Temp:            1,
 	}
 
 	return t, []tea.ProgramOption{}

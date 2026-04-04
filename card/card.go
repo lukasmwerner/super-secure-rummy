@@ -19,6 +19,13 @@ const (
 	Heart   Suit = "♥︎"
 )
 
+var SuitMap = []Suit{Diamond, Heart, Spade, Club}
+
+type Card struct {
+	Suit Suit
+	Rank string
+}
+
 var (
 	halfCardBorder = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder(), true, true, false, true).
@@ -47,6 +54,8 @@ func cardDesign(s Suit, rank string, bg string) string {
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
+
+	RankConv(&r)
 
 	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(string(s)))
 	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(rank), left)
@@ -79,6 +88,22 @@ func halfCardDesign(active bool, s Suit, rank string, bg string) string {
 	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, " ")
 	return halfCardBorder.Render(contents)
 
+	RankConv(&r)
+
+	contents := style.Render(r) + "\n" + style.Render(string(s))
+	return partialCardBorder.Render(contents)
+}
+
+func RaisedCard(s Suit, r string, bg string) string {
+	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
+	if s == Diamond || s == Heart {
+		style = redCard
+	}
+
+	RankConv(&r)
+
+	contents := style.Render(r) + "\n" + style.Render(string(s)) + "\n\n"
+	return partialCardBorder.Render(contents)
 }
 
 func CardLayer(s Suit, rank string, bg string) *lipgloss.Layer {
@@ -92,4 +117,17 @@ func HalfCardLayer(active bool, s Suit, rank string, bg string) *lipgloss.Layer 
 func DrawPile() *lipgloss.Layer {
 	blankCard := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(width + 2).Height(fullHeight + 2)
 	return lipgloss.NewLayer(blankCard.Render(""))
+}
+
+func RankConv(r *string) {
+	switch *r {
+	case "1":
+		*r = "A"
+	case "11":
+		*r = "J"
+	case "12":
+		*r = "Q"
+	case "13":
+		*r = "K"
+	}
 }
