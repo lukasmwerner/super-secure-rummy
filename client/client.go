@@ -154,11 +154,12 @@ func (m Model) View() tea.View {
 		IMap(m.State.Hand[m.PubKey], func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
 	)
 
-	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dy()) / 2)
+	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dx()) / 2)
 	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), hand.Render())
 	// >>>>>>> main
 
-	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks + "\n\n" + centerHand)
+	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks +
+		"\n\n" + centerHand)
 	v.AltScreen = true
 	return v
 }

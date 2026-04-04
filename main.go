@@ -91,6 +91,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	}
 
 	t := client.Model{
+		Bg:              "dark",
 		PubKey:          hex.EncodeToString(pubKey.Marshal()),
 		Term:            pty.Term,
 		Width:           pty.Window.Width,
