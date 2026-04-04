@@ -1,3 +1,3 @@
-# secure-rummy
+# super-secure-rummy
 
 Rummy, but secure.

@@ -8,8 +8,8 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/lukasmwerner/secure-rummy/card"
-	"github.com/lukasmwerner/secure-rummy/game"
+	"github.com/lukasmwerner/super-secure-rummy/card"
+	"github.com/lukasmwerner/super-secure-rummy/game"
 )
 
 var (

@@ -20,9 +20,9 @@ import (
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/lukasmwerner/secure-rummy/card"
-	"github.com/lukasmwerner/secure-rummy/client"
-	"github.com/lukasmwerner/secure-rummy/game"
+	"github.com/lukasmwerner/super-secure-rummy/card"
+	"github.com/lukasmwerner/super-secure-rummy/client"
+	"github.com/lukasmwerner/super-secure-rummy/game"
 )
 
 var states = map[uint64]game.State{}

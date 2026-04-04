@@ -1,4 +1,4 @@
-module github.com/lukasmwerner/secure-rummy
+module github.com/lukasmwerner/super-secure-rummy
 
 go 1.26.1
 

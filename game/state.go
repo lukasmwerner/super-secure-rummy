@@ -1,7 +1,7 @@
 package game
 
 import (
-	"github.com/lukasmwerner/secure-rummy/card"
+	"github.com/lukasmwerner/super-secure-rummy/card"
 )
 
 type Game struct {
