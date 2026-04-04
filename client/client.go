@@ -102,15 +102,18 @@ func (m Model) View() tea.View {
 	var setBuilder []string
 
 	for i := 1; i < 14; i++ {
-		setBuilder = append(setBuilder, card.PartialCard(card.Spade, strconv.Itoa(i), m.Bg))
+		if i == 13 {
+			setBuilder = append(setBuilder, card.FullCard(card.Spade, strconv.Itoa(i), m.Bg))
+		} else {
+			setBuilder = append(setBuilder, card.PartialCard(card.Spade, strconv.Itoa(i), m.Bg))
+		}
 	}
+
+	//setBuilder[len(setBuilder)-1] = card.FullCard(card.Spade, strconv.Itoa(13), m.Bg)
 
 	set := lipgloss.JoinVertical(
 		lipgloss.Left,
 		setBuilder...,
-	//card.PartialCard(card.Spade, "K", m.Bg),
-	//card.PartialCard(card.Spade, "Q", m.Bg),
-	//card.FullCard(card.Spade, "J", m.Bg),
 	)
 
 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set, " ", set)
