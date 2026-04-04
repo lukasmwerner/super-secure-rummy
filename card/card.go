@@ -55,7 +55,7 @@ func FullCard(s Suit, r string, bg string) string {
 		style = redCard
 	}
 
-	r = RankConv(r)
+	RankConv(&r)
 
 	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(string(s)))
 	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(r), left)
@@ -77,7 +77,7 @@ func PartialCard(s Suit, r string, bg string) string {
 		style = redCard
 	}
 
-	r = RankConv(r)
+	RankConv(&r)
 
 	contents := style.Render(r) + "\n" + style.Render(string(s))
 	return partialCardBorder.Render(contents)
@@ -89,7 +89,7 @@ func RaisedCard(s Suit, r string, bg string) string {
 		style = redCard
 	}
 
-	r = RankConv(r)
+	RankConv(&r)
 
 	contents := style.Render(r) + "\n" + style.Render(string(s)) + "\n\n"
 	return partialCardBorder.Render(contents)
@@ -101,16 +101,15 @@ func DrawPile() string {
 	return blankCard.Render(" ")
 }
 
-func RankConv(r string) string {
-	switch r {
+func RankConv(r *string) {
+	switch *r {
 	case "1":
-		r = "A"
+		*r = "A"
 	case "11":
-		r = "J"
+		*r = "J"
 	case "12":
-		r = "Q"
+		*r = "Q"
 	case "13":
-		r = "K"
+		*r = "K"
 	}
-	return r
 }
