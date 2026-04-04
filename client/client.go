@@ -99,11 +99,18 @@ func (m Model) View() tea.View {
 
 	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", hex.EncodeToString(m.PubKey.Marshal()), m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
 
+	var setBuilder []string
+
+	for i := 1; i < 14; i++ {
+		setBuilder = append(setBuilder, card.PartialCard(card.Spade, strconv.Itoa(i), m.Bg))
+	}
+
 	set := lipgloss.JoinVertical(
 		lipgloss.Left,
-		card.PartialCard(card.Spade, "K", m.Bg),
-		card.PartialCard(card.Spade, "Q", m.Bg),
-		card.FullCard(card.Spade, "J", m.Bg),
+		setBuilder...,
+	//card.PartialCard(card.Spade, "K", m.Bg),
+	//card.PartialCard(card.Spade, "Q", m.Bg),
+	//card.FullCard(card.Spade, "J", m.Bg),
 	)
 
 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set, " ", set)
