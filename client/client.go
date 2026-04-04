@@ -83,7 +83,16 @@ func (m Model) View() tea.View {
 	s := fmt.Sprintf("Your term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
 	st.WriteString(helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n")))
 
-	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + card.FullCard(card.Club, card.Red, "Q") + "\n\n" + m.Quit_text_style.Render(st.String()))
+	set := lipgloss.JoinVertical(
+		lipgloss.Left,
+		card.PartialCard(card.Spade, card.Black, "K", m.Bg),
+		card.PartialCard(card.Spade, card.Red, "Q", m.Bg),
+		card.FullCard(card.Spade, card.Black, "J", m.Bg),
+	)
+
+	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set, " ", set)
+
+	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks + "\n\n" + m.Quit_text_style.Render(st.String()))
 	v.AltScreen = true
 	return v
 }
