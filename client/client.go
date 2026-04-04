@@ -29,6 +29,7 @@ type Model struct {
 	Quit_text_style lipgloss.Style
 	Help            bool
 	State           game.State
+	Temp            int
 	//state           sessionState
 }
 
@@ -72,6 +73,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Help = false
 		case "?":
 			m.Help = true
+		case "up":
+			c := card.Card{
+				Suit: card.SuitMap[rand.Intn(4)],
+				Rank: strconv.Itoa(rand.Intn(13) + 1),
+			}
+			m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
+		case "down":
+			if len(m.State.Hand[m.PubKey]) > 0 {
+				m.State.Hand[m.PubKey] = m.State.Hand[m.PubKey][:len(m.State.Hand[m.PubKey])-1]
+			}
+		case "-":
+			if m.Temp > 0 {
+				m.Temp--
+			}
+		case "+", "=":
+			if m.Temp < 13 {
+				m.Temp++
+			}
 		}
 	}
 	return m, nil
@@ -97,26 +116,29 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", hex.EncodeToString(m.PubKey.Marshal()), m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
+	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.temp: %d\n", hex.EncodeToString(m.PubKey.Marshal()), m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.Temp)
 
-	var setBuilder []string
-
-	for i := 1; i < 14; i++ {
-		if i == 13 {
-			setBuilder = append(setBuilder, card.FullCard(card.Spade, strconv.Itoa(i), m.Bg))
-		} else {
-			setBuilder = append(setBuilder, card.PartialCard(card.Spade, strconv.Itoa(i), m.Bg))
+	var setBuilder [][]string
+	var set = []string{}
+	for j := 0; j < 4; j++ {
+		setBuilder = append(setBuilder, []string{})
+		for i := 1; i < m.Temp+1; i++ {
+			if i == m.Temp {
+				setBuilder[j] = append(setBuilder[j], card.FullCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
+			} else {
+				setBuilder[j] = append(setBuilder[j], card.PartialCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
+			}
 		}
+
+		set = append(set, lipgloss.JoinVertical(
+			lipgloss.Left,
+			setBuilder[j]...,
+		))
 	}
 
 	//setBuilder[len(setBuilder)-1] = card.FullCard(card.Spade, strconv.Itoa(13), m.Bg)
 
-	set := lipgloss.JoinVertical(
-		lipgloss.Left,
-		setBuilder...,
-	)
-
-	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set, " ", set)
+	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set...)
 
 	// helpInfo := helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n"))
 	// + m.Quit_text_style.Render(helpInfo)

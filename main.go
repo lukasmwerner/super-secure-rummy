@@ -99,6 +99,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		Quit_text_style: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Help:            false,
 		State:           states[1234],
+		Temp:            1,
 	}
 
 	return t, []tea.ProgramOption{}
