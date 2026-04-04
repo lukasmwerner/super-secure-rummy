@@ -27,9 +27,9 @@ type Card struct {
 }
 
 var (
-	partialCardBorder = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder(), true, true, false, true).
-				Width(width + 2)
+	halfCardBorder = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder(), true, true, false, true).
+			Width(width + 2)
 	fullCardBorder = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder())
 	fillerStyle = lipgloss.NewStyle().
@@ -49,7 +49,7 @@ func adaptiveColor(bg string, light color.Color, dark color.Color) color.Color {
 	return light
 }
 
-func FullCard(s Suit, r string, bg string) string {
+func cardDesign(s Suit, rank string, bg string) string {
 	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
@@ -58,24 +58,35 @@ func FullCard(s Suit, r string, bg string) string {
 	RankConv(&r)
 
 	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(string(s)))
-	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(r), left)
+	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(rank), left)
 
 	// TODO: properly render the middle design of the card
 	filler := fillerStyle.Render("")
 
 	right := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Bottom, style.Render(string(s)))
-	right = lipgloss.JoinVertical(lipgloss.Right, right, style.Render(r))
+	right = lipgloss.JoinVertical(lipgloss.Right, right, style.Render(rank))
 
 	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, right)
 	return fullCardBorder.Render(contents)
-
 }
 
-func PartialCard(s Suit, r string, bg string) string {
+func halfCardDesign(active bool, s Suit, rank string, bg string) string {
 	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
+	height := (fullHeight / 2) - 1
+	if active {
+		height += 1
+	}
+
+	left := lipgloss.PlaceVertical(height, lipgloss.Top, style.Render(string(s)))
+	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(rank), left)
+
+	filler := fillerStyle.Width(width).Render("")
+
+	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, " ")
+	return halfCardBorder.Render(contents)
 
 	RankConv(&r)
 
@@ -93,12 +104,19 @@ func RaisedCard(s Suit, r string, bg string) string {
 
 	contents := style.Render(r) + "\n" + style.Render(string(s)) + "\n\n"
 	return partialCardBorder.Render(contents)
-
 }
 
-func DrawPile() string {
+func CardLayer(s Suit, rank string, bg string) *lipgloss.Layer {
+	return lipgloss.NewLayer(cardDesign(s, rank, bg))
+}
+
+func HalfCardLayer(active bool, s Suit, rank string, bg string) *lipgloss.Layer {
+	return lipgloss.NewLayer(halfCardDesign(active, s, rank, bg))
+}
+
+func DrawPile() *lipgloss.Layer {
 	blankCard := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(width + 2).Height(fullHeight + 2)
-	return blankCard.Render(" ")
+	return lipgloss.NewLayer(blankCard.Render(""))
 }
 
 func RankConv(r *string) {
