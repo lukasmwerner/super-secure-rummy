@@ -55,6 +55,8 @@ func FullCard(s Suit, r string, bg string) string {
 		style = redCard
 	}
 
+	r = RankConv(r)
+
 	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(string(s)))
 	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(r), left)
 
@@ -75,6 +77,8 @@ func PartialCard(s Suit, r string, bg string) string {
 		style = redCard
 	}
 
+	r = RankConv(r)
+
 	contents := style.Render(r) + "\n" + style.Render(string(s))
 	return partialCardBorder.Render(contents)
 }
@@ -84,6 +88,9 @@ func RaisedCard(s Suit, r string, bg string) string {
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
+
+	r = RankConv(r)
+
 	contents := style.Render(r) + "\n" + style.Render(string(s)) + "\n\n"
 	return partialCardBorder.Render(contents)
 
@@ -92,4 +99,18 @@ func RaisedCard(s Suit, r string, bg string) string {
 func DrawPile() string {
 	blankCard := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(width + 2).Height(fullHeight + 2)
 	return blankCard.Render(" ")
+}
+
+func RankConv(r string) string {
+	switch r {
+	case "1":
+		r = "A"
+	case "11":
+		r = "J"
+	case "12":
+		r = "Q"
+	case "13":
+		r = "K"
+	}
+	return r
 }
