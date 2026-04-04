@@ -29,6 +29,9 @@ var (
 			Width(width - 2)
 	redCard = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#931B29"))
+
+	blackText = lipgloss.Color("#000000")
+	whiteText = lipgloss.Color("#ffffff")
 )
 
 // Returns the matching color to whatever the background is set to
@@ -40,7 +43,7 @@ func adaptiveColor(bg string, light color.Color, dark color.Color) color.Color {
 }
 
 func FullCard(s Suit, r string, bg string) string {
-	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, lipgloss.Black, lipgloss.White))
+	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
@@ -60,7 +63,7 @@ func FullCard(s Suit, r string, bg string) string {
 }
 
 func PartialCard(s Suit, r string, bg string) string {
-	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, lipgloss.Black, lipgloss.White))
+	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
@@ -70,7 +73,7 @@ func PartialCard(s Suit, r string, bg string) string {
 }
 
 func RaisedCard(s Suit, r string, bg string) string {
-	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, lipgloss.Black, lipgloss.White))
+	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
 	}
