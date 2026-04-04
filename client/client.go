@@ -3,11 +3,15 @@ package client
 import (
 	"encoding/hex"
 	"fmt"
+	"math/rand"
+	"strconv"
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/ssh"
 	"github.com/lukasmwerner/secure-rummy/card"
+	"github.com/lukasmwerner/secure-rummy/game"
 )
 
 var (
@@ -15,7 +19,7 @@ var (
 )
 
 type Model struct {
-	PubKey          []byte
+	PubKey          ssh.PublicKey
 	Term            string
 	Width           int
 	Height          int
@@ -24,10 +28,23 @@ type Model struct {
 	Text_style      lipgloss.Style
 	Quit_text_style lipgloss.Style
 	Help            bool
+	State           game.State
 	//state           sessionState
 }
 
 func (m Model) Init() tea.Cmd {
+	m.State.Hand[m.PubKey] = []card.Card{}
+	// init game state with data
+	for i := 0; i < 7; i++ {
+
+		c := card.Card{
+			Suit: card.SuitMap[rand.Intn(4)],
+			Rank: strconv.Itoa(rand.Intn(13) + 1),
+		}
+
+		m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
+	}
+
 	return tea.Batch(
 		tea.RequestBackgroundColor,
 	)
@@ -80,7 +97,7 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", hex.EncodeToString(m.PubKey), m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
+	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", hex.EncodeToString(m.PubKey.Marshal()), m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
 
 	set := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -93,13 +110,17 @@ func (m Model) View() tea.View {
 
 	// helpInfo := helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n"))
 	// + m.Quit_text_style.Render(helpInfo)
+	var handBuilder []string
+
+	for i := 0; i < len(m.State.Hand[m.PubKey]); i++ {
+		handBuilder = append(handBuilder, card.PartialCard(m.State.Hand[m.PubKey][i].Suit, m.State.Hand[m.PubKey][i].Rank, m.Bg))
+	}
+
 	currentHand := lipgloss.JoinHorizontal(
 		lipgloss.Bottom,
-		card.PartialCard(card.Club, "A", m.Bg),
-		card.RaisedCard(card.Heart, "2", m.Bg),
-		card.PartialCard(card.Diamond, "J", m.Bg),
-		card.PartialCard(card.Spade, "4", m.Bg),
+		handBuilder...,
 	)
+
 	centerHand := lipgloss.PlaceHorizontal(m.Width, lipgloss.Center, currentHand)
 	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks + "\n\n" + centerHand)
 	v.AltScreen = true

@@ -19,6 +19,13 @@ const (
 	Heart   Suit = "♥︎"
 )
 
+var SuitMap = []Suit{Diamond, Heart, Spade, Club}
+
+type Card struct {
+	Suit Suit
+	Rank string
+}
+
 var (
 	partialCardBorder = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder(), true, true, false, true).

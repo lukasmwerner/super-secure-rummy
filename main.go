@@ -19,10 +19,12 @@ import (
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/lukasmwerner/secure-rummy/card"
 	"github.com/lukasmwerner/secure-rummy/client"
+	"github.com/lukasmwerner/secure-rummy/game"
 )
 
-var states map[string]game.State
+var states = map[uint64]game.State{}
 
 func main() {
 
@@ -79,16 +81,24 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
 	pubKey := s.PublicKey()
 
-	pubBytes := pubKey.Marshal()
+	// pubBytes := pubKey.Marshal()
+
+	states[1234] = game.State{
+		Hand:    map[ssh.PublicKey][]card.Card{},
+		Discard: []card.Card{},
+		Draw:    []card.Card{},
+		Melds:   map[ssh.PublicKey][]card.Card{},
+	}
 
 	t := client.Model{
-		PubKey:          pubBytes,
+		PubKey:          pubKey,
 		Term:            pty.Term,
 		Width:           pty.Window.Width,
 		Height:          pty.Window.Height,
 		Text_style:      lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
 		Quit_text_style: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Help:            false,
+		State:           states[1234],
 	}
 
 	return t, []tea.ProgramOption{}
