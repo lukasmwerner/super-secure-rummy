@@ -66,10 +66,11 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 
 	t := term_model{
-		term:   pty.Term,
-		width:  pty.Window.Width,
-		height: pty.Window.Height,
-		bg:     "light",
+		term:            pty.Term,
+		width:           pty.Window.Width,
+		height:          pty.Window.Height,
+		text_style:      lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
+		quit_text_style: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 	}
 
 	return t, []tea.ProgramOption{}
@@ -98,6 +99,8 @@ func (m term_model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.BackgroundColorMsg:
 		if msg.IsDark() {
 			m.bg = "dark"
+		} else {
+			m.bg = "light"
 		}
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
