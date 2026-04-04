@@ -48,8 +48,8 @@ func FullCard(s Suit, r string, bg string) string {
 		style = redCard
 	}
 
-	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(r))
-	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(string(s)), left)
+	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(string(s)))
+	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(r), left)
 
 	// TODO: properly render the middle design of the card
 	filler := fillerStyle.Render(" ")
