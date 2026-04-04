@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -9,7 +8,6 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/ssh"
 	"github.com/lukasmwerner/secure-rummy/card"
 	"github.com/lukasmwerner/secure-rummy/game"
 )
@@ -19,7 +17,7 @@ var (
 )
 
 type Model struct {
-	PubKey          ssh.PublicKey
+	PubKey          string
 	Term            string
 	Width           int
 	Height          int
@@ -30,7 +28,6 @@ type Model struct {
 	Help            bool
 	State           game.State
 	Temp            int
-	//state           sessionState
 }
 
 func (m Model) Init() tea.Cmd {
@@ -115,44 +112,44 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.temp: %d\n", hex.EncodeToString(m.PubKey.Marshal()), m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.Temp)
+	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.temp: %d\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.Temp)
 
-// <<<<<<< sessions
-// 	var setBuilder [][]string
-// 	var set = []string{}
-// 	for j := 0; j < 4; j++ {
-// 		setBuilder = append(setBuilder, []string{})
-// 		for i := 1; i < m.Temp+1; i++ {
-// 			if i == m.Temp {
-// 				setBuilder[j] = append(setBuilder[j], card.FullCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
-// 			} else {
-// 				setBuilder[j] = append(setBuilder[j], card.PartialCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
-// 			}
-// 		}
+	// <<<<<<< sessions
+	// 	var setBuilder [][]string
+	// 	var set = []string{}
+	// 	for j := 0; j < 4; j++ {
+	// 		setBuilder = append(setBuilder, []string{})
+	// 		for i := 1; i < m.Temp+1; i++ {
+	// 			if i == m.Temp {
+	// 				setBuilder[j] = append(setBuilder[j], card.FullCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
+	// 			} else {
+	// 				setBuilder[j] = append(setBuilder[j], card.PartialCard(card.SuitMap[j], strconv.Itoa(i), m.Bg))
+	// 			}
+	// 		}
 
-// 		set = append(set, lipgloss.JoinVertical(
-// 			lipgloss.Left,
-// 			setBuilder[j]...,
-// 		))
-// 	}
+	// 		set = append(set, lipgloss.JoinVertical(
+	// 			lipgloss.Left,
+	// 			setBuilder[j]...,
+	// 		))
+	// 	}
 
-// 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set...)
+	// 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set...)
 
-// 	// helpInfo := helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n"))
-// 	// + m.Quit_text_style.Render(helpInfo)
-// 	var handBuilder []string
+	// 	// helpInfo := helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n"))
+	// 	// + m.Quit_text_style.Render(helpInfo)
+	// 	var handBuilder []string
 
-// 	for i := 0; i < len(m.State.Hand[m.PubKey]); i++ {
-// 		handBuilder = append(handBuilder, card.PartialCard(m.State.Hand[m.PubKey][i].Suit, m.State.Hand[m.PubKey][i].Rank, m.Bg))
-// 	}
+	// 	for i := 0; i < len(m.State.Hand[m.PubKey]); i++ {
+	// 		handBuilder = append(handBuilder, card.PartialCard(m.State.Hand[m.PubKey][i].Suit, m.State.Hand[m.PubKey][i].Rank, m.Bg))
+	// 	}
 
-// 	currentHand := lipgloss.JoinHorizontal(
-// 		lipgloss.Bottom,
-// 		handBuilder...,
-// 	)
+	// 	currentHand := lipgloss.JoinHorizontal(
+	// 		lipgloss.Bottom,
+	// 		handBuilder...,
+	// 	)
 
-// 	centerHand := lipgloss.PlaceHorizontal(m.Width, lipgloss.Center, currentHand)
-// =======
+	// 	centerHand := lipgloss.PlaceHorizontal(m.Width, lipgloss.Center, currentHand)
+	// =======
 	meld_cards := []*lipgloss.Layer{
 		card.CardLayer(card.Spade, "K", m.Bg),
 		card.CardLayer(card.Spade, "Q", m.Bg),
@@ -174,9 +171,8 @@ func (m Model) View() tea.View {
 	)
 	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dy()) / 2)
 	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), hand.Render())
-// >>>>>>> main
-  
-  
+	// >>>>>>> main
+
 	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks + "\n\n" + centerHand)
 	v.AltScreen = true
 	return v

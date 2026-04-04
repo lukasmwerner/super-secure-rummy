@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"net"
 	"os"
@@ -84,14 +85,14 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	// pubBytes := pubKey.Marshal()
 
 	states[1234] = game.State{
-		Hand:    map[ssh.PublicKey][]card.Card{},
+		Hand:    map[string][]card.Card{},
 		Discard: []card.Card{},
 		Draw:    []card.Card{},
-		Melds:   map[ssh.PublicKey][]card.Card{},
+		Melds:   map[string][]card.Card{},
 	}
 
 	t := client.Model{
-		PubKey:          pubKey,
+		PubKey:          hex.EncodeToString(pubKey.Marshal()),
 		Term:            pty.Term,
 		Width:           pty.Window.Width,
 		Height:          pty.Window.Height,

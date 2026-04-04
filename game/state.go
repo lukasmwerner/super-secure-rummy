@@ -1,7 +1,6 @@
 package game
 
 import (
-	"github.com/charmbracelet/ssh"
 	"github.com/lukasmwerner/secure-rummy/card"
 )
 
@@ -11,8 +10,8 @@ type Game struct {
 }
 
 type State struct {
-	Hand    map[ssh.PublicKey][]card.Card
+	Hand    map[string][]card.Card
 	Discard []card.Card
 	Draw    []card.Card
-	Melds   map[ssh.PublicKey][]card.Card
+	Melds   map[string][]card.Card
 }
