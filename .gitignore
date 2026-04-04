@@ -1,3 +1,4 @@
 secure-rummy
 id_ed25519*
 .idea/
+.env

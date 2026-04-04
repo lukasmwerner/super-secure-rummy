@@ -18,14 +18,24 @@ import (
 	"charm.land/wish/v2/bubbletea"
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
+	_ "github.com/joho/godotenv/autoload"
 )
 
-const (
-	host = "localhost"
-	port = "23234"
-)
+//const (
+//	host = "localhost"
+//	port = "23234"
+//)
 
 func main() {
+	host := os.Getenv("RUMMY_HOST")
+	if len(host) == 0 {
+		host = "localhost"
+	}
+	port := os.Getenv("RUMMY_PORT")
+	if len(port) == 0 {
+		port = "23234"
+	}
+
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		ssh.AllocatePty(),
