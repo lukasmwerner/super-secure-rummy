@@ -32,8 +32,6 @@ var (
 			Width(width + 2)
 	fullCardBorder = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder())
-	fillerStyle = lipgloss.NewStyle().
-			Width(width - 2)
 	redCard = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#931B29"))
 
@@ -60,8 +58,8 @@ func cardDesign(s Suit, rank string, bg string) string {
 	left := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Top, style.Render(string(s)))
 	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(rank), left)
 
-	// TODO: properly render the middle design of the card
-	filler := fillerStyle.Render("")
+	// Subtract 2 for each char in the rank because of the bottom right
+	filler := lipgloss.NewStyle().Width(width - (2 * len(string(rank)))).Render("")
 
 	right := lipgloss.PlaceVertical(fullHeight-1, lipgloss.Bottom, style.Render(string(s)))
 	right = lipgloss.JoinVertical(lipgloss.Right, right, style.Render(rank))
@@ -85,7 +83,7 @@ func halfCardDesign(active bool, s Suit, rank string, bg string) string {
 	left := lipgloss.PlaceVertical(height, lipgloss.Top, style.Render(string(s)))
 	left = lipgloss.JoinVertical(lipgloss.Left, style.Render(rank), left)
 
-	filler := fillerStyle.Width(width).Render("")
+	filler := lipgloss.NewStyle().Width(width - 2 - len(string(rank))).Render("")
 
 	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, " ")
 	return halfCardBorder.Render(contents)
