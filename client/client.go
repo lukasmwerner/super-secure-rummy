@@ -97,8 +97,9 @@ func (m Model) View() tea.View {
 	}
 	hand := lipgloss.NewCompositor(
 		IMap(hand_cards, func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
-	).Render()
-	centerHand := lipgloss.PlaceHorizontal(m.Width, lipgloss.Center, hand)
+	)
+	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dy()) / 2)
+	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), hand.Render())
 	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks + "\n\n" + centerHand)
 	v.AltScreen = true
 	return v
