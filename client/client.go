@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"charm.land/bubbles/v2/viewport"
@@ -14,6 +15,7 @@ var (
 )
 
 type Model struct {
+	PubKey          []byte
 	Term            string
 	Width           int
 	Height          int
@@ -78,7 +80,7 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Your term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
+	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", hex.EncodeToString(m.PubKey), m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
 
 	set := lipgloss.JoinVertical(
 		lipgloss.Left,

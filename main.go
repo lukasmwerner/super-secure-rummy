@@ -22,6 +22,8 @@ import (
 	"github.com/lukasmwerner/secure-rummy/client"
 )
 
+var states map[string]game.State
+
 func main() {
 
 	host := os.Getenv("RUMMY_HOST")
@@ -35,6 +37,9 @@ func main() {
 
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
+		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+			return true
+		}),
 		ssh.AllocatePty(),
 		wish.WithMiddleware(
 			bubbletea.Middleware(teaHandler),
@@ -72,7 +77,12 @@ func main() {
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 
+	pubKey := s.PublicKey()
+
+	pubBytes := pubKey.Marshal()
+
 	t := client.Model{
+		PubKey:          pubBytes,
 		Term:            pty.Term,
 		Width:           pty.Window.Width,
 		Height:          pty.Window.Height,
