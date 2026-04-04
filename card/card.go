@@ -6,16 +6,11 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-type Color int
 type Suit string
 
 const (
 	width      = 8
 	fullHeight = 6
-)
-const (
-	Black Color = iota
-	Red
 )
 const (
 	Diamond Suit = "♦︎"
@@ -44,9 +39,9 @@ func adaptiveColor(bg string, light color.Color, dark color.Color) color.Color {
 	return light
 }
 
-func FullCard(s Suit, c Color, r string, bg string) string {
+func FullCard(s Suit, r string, bg string) string {
 	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, lipgloss.Black, lipgloss.White))
-	if c == Red {
+	if s == Diamond || s == Heart {
 		style = redCard
 	}
 
@@ -64,12 +59,27 @@ func FullCard(s Suit, c Color, r string, bg string) string {
 
 }
 
-func PartialCard(s Suit, c Color, r string, bg string) string {
+func PartialCard(s Suit, r string, bg string) string {
 	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, lipgloss.Black, lipgloss.White))
-	if c == Red {
+	if s == Diamond || s == Heart {
 		style = redCard
 	}
 
 	contents := style.Render(r) + "\n" + style.Render(string(s))
 	return partialCardBorder.Render(contents)
+}
+
+func RaisedCard(s Suit, r string, bg string) string {
+	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, lipgloss.Black, lipgloss.White))
+	if s == Diamond || s == Heart {
+		style = redCard
+	}
+	contents := style.Render(r) + "\n" + style.Render(string(s)) + "\n\n"
+	return partialCardBorder.Render(contents)
+
+}
+
+func DrawPile() string {
+	blankCard := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(width + 2).Height(fullHeight + 2)
+	return blankCard.Render(" ")
 }

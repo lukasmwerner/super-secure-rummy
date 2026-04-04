@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"strings"
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -61,7 +60,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() tea.View {
 
-	var st strings.Builder
 	//model := m.currentFocusedModel()
 	if m.Help {
 		vp := viewport.New()
@@ -81,18 +79,27 @@ func (m Model) View() tea.View {
 	}
 
 	s := fmt.Sprintf("Your term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s", m.Term, m.Width, m.Height, m.Bg, m.Color_profile)
-	st.WriteString(helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n")))
 
 	set := lipgloss.JoinVertical(
 		lipgloss.Left,
-		card.PartialCard(card.Spade, card.Black, "K", m.Bg),
-		card.PartialCard(card.Spade, card.Red, "Q", m.Bg),
-		card.FullCard(card.Spade, card.Black, "J", m.Bg),
+		card.PartialCard(card.Spade, "K", m.Bg),
+		card.PartialCard(card.Spade, "Q", m.Bg),
+		card.FullCard(card.Spade, "J", m.Bg),
 	)
 
 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, set, " ", set)
 
-	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks + "\n\n" + m.Quit_text_style.Render(st.String()))
+	// helpInfo := helpStyle.Render(fmt.Sprintf("\n?: help, q: exit\n"))
+	// + m.Quit_text_style.Render(helpInfo)
+	currentHand := lipgloss.JoinHorizontal(
+		lipgloss.Bottom,
+		card.PartialCard(card.Club, "A", m.Bg),
+		card.RaisedCard(card.Heart, "2", m.Bg),
+		card.PartialCard(card.Diamond, "J", m.Bg),
+		card.PartialCard(card.Spade, "4", m.Bg),
+	)
+	centerHand := lipgloss.PlaceHorizontal(m.Width, lipgloss.Center, currentHand)
+	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks + "\n\n" + centerHand)
 	v.AltScreen = true
 	return v
 }
