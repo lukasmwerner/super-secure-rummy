@@ -19,6 +19,7 @@ type Hub struct {
 	Actions    chan GameAction
 	Register   chan *PlayerConn
 	Unregister chan string // PlayerID to unregister
+	QueryJoin  chan QueryJoinRequest
 
 	players map[string]*PlayerConn
 	state   *GameState
@@ -33,6 +34,7 @@ func NewHub(minPlayers, maxPlayers int) *Hub {
 		Actions:    make(chan GameAction, 64),
 		Register:   make(chan *PlayerConn, 8),
 		Unregister: make(chan string, 8),
+		QueryJoin:  make(chan QueryJoinRequest, 8),
 		players:    make(map[string]*PlayerConn),
 		minPlayers: minPlayers,
 		maxPlayers: maxPlayers,
@@ -52,8 +54,51 @@ func (h *Hub) Run() {
 
 		case action := <-h.Actions:
 			h.handleAction(action)
+
+		case req := <-h.QueryJoin:
+			h.handleQueryJoin(req)
 		}
 	}
+}
+
+// QueryJoinRequest is used to synchronously ask if a player can join this Hub.
+type QueryJoinRequest struct {
+	PlayerID string
+	Response chan bool
+}
+
+func (h *Hub) handleQueryJoin(req QueryJoinRequest) {
+	// Reconnecting player?
+	if h.state != nil && h.state.Started && !h.state.GameOver {
+		for _, p := range h.state.Players {
+			if p.ID == req.PlayerID {
+				req.Response <- true
+				return
+			}
+		}
+		// Game in progress and player isn't part of it
+		req.Response <- false
+		return
+	}
+
+	// Active game but full?
+	if h.state == nil || h.state.GameOver {
+		if len(h.players) >= h.maxPlayers {
+			req.Response <- false
+			return
+		}
+		req.Response <- true
+		return
+	}
+
+	req.Response <- false
+}
+
+// CanJoin asks the Hub if a player can join it. It is safe to call from any goroutine.
+func (h *Hub) CanJoin(playerID string) bool {
+	resCh := make(chan bool)
+	h.QueryJoin <- QueryJoinRequest{PlayerID: playerID, Response: resCh}
+	return <-resCh
 }
 
 func (h *Hub) handleRegister(conn *PlayerConn) {

@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -23,6 +24,32 @@ import (
 	"github.com/lukasmwerner/super-secure-rummy/game"
 )
 
+type RoomManager struct {
+	mu   sync.Mutex
+	hubs []*game.Hub
+}
+
+func (rm *RoomManager) GetHub(playerID string) *game.Hub {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	// Try to find an existing hub that allows this player to join
+	for _, h := range rm.hubs {
+		if h.CanJoin(playerID) {
+			return h
+		}
+	}
+
+	// No available hub found, create a new one
+	log.Info("All lobbies full, creating new game room")
+	h := game.NewHub(2, 4)
+	go h.Run()
+	rm.hubs = append(rm.hubs, h)
+	return h
+}
+
+var rm = &RoomManager{}
+
 func main() {
 	host := os.Getenv("RUMMY_HOST")
 	if host == "" {
@@ -33,9 +60,7 @@ func main() {
 		port = "23234"
 	}
 
-	// Create the game hub and start its event loop
-	hub := game.NewHub(2, 4)
-	go hub.Run()
+	// We now use the global RoomManager instead of a single Hub
 
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
@@ -46,7 +71,7 @@ func main() {
 		wish.WithMiddleware(
 			// Use MiddlewareWithProgramHandler so we get access to *tea.Program
 			// for wiring hub→client snapshot delivery via p.Send()
-			bubbletea.MiddlewareWithProgramHandler(makeProgramHandler(hub)),
+			bubbletea.MiddlewareWithProgramHandler(makeProgramHandler()),
 			activeterm.Middleware(),
 			logging.Middleware(),
 		),
@@ -81,12 +106,15 @@ func main() {
 
 // makeProgramHandler returns a ProgramHandler that creates a tea.Program
 // and wires the PlayerConn.Send to p.Send before the program runs.
-func makeProgramHandler(hub *game.Hub) bubbletea.ProgramHandler {
+func makeProgramHandler() bubbletea.ProgramHandler {
 	return func(s ssh.Session) *tea.Program {
 		pty, _, _ := s.Pty()
 		playerID := fingerprint(s.PublicKey())
 
-		log.Info("Player connected", "id", playerID[:8], "term", pty.Term)
+		// Assign player to an open hub (or a new one)
+		hub := rm.GetHub(playerID)
+
+		log.Info("Player connected to hub", "id", playerID[:8], "term", pty.Term)
 
 		conn := &game.PlayerConn{
 			ID:   playerID,
