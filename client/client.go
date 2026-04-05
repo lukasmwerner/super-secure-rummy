@@ -667,12 +667,7 @@ func (m Model) viewGame() tea.View {
 
 			isActive := isCursor || isSelected
 
-			if i == len(m.Snapshot.YourHand)-1 {
-				// Last card renders full
-				handLayers = append(handLayers, card.CardLayer(suit, strconv.Itoa(c.Rank), m.Bg, highlight))
-			} else {
-				handLayers = append(handLayers, card.HalfCardLayer(isActive, suit, strconv.Itoa(c.Rank), m.Bg, highlight))
-			}
+			handLayers = append(handLayers, card.HalfCardLayer(isActive, suit, strconv.Itoa(c.Rank), m.Bg, highlight))
 		}
 
 		// Compose hand with Y-offsets: cursor/selected cards are raised
