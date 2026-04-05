@@ -102,6 +102,10 @@ func DrawPile() *lipgloss.Layer {
 	blankCard := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(width + 2).Height(fullHeight + 2)
 	return lipgloss.NewLayer(blankCard.Render(""))
 }
+func PlaceHolderPile() *lipgloss.Layer {
+	blankCard := lipgloss.NewStyle().Border(lipgloss.HiddenBorder()).Background(lipgloss.Color("245")).Width(width + 2).Height(fullHeight + 2)
+	return lipgloss.NewLayer(blankCard.Render(""))
+}
 
 func RankConv(r *string) {
 	switch *r {
