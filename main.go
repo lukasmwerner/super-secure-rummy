@@ -90,18 +90,19 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		Melds:   map[string][]*lipgloss.Layer{},
 	}
 
+	var meld = make([]int, 12)
+
 	t := client.Model{
 		Bg:              "dark",
 		PubKey:          hex.EncodeToString(pubKey.Marshal()),
 		Term:            pty.Term,
 		Width:           pty.Window.Width,
 		Height:          pty.Window.Height,
-		Bg:              "dark",
 		Text_style:      lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
 		Quit_text_style: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Help:            false,
 		State:           states[1234],
-		MeldLen:         1,
+		MeldLen:         meld,
 		HandLen:         7,
 	}
 

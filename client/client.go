@@ -27,7 +27,8 @@ type Model struct {
 	Quit_text_style lipgloss.Style
 	Help            bool
 	State           game.State
-	MeldLen         int
+	MeldID          int
+	MeldLen         []int
 	HandLen         int
 	//state           sessionState
 }
@@ -82,14 +83,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.State.Hand[m.PubKey] = m.State.Hand[m.PubKey][:len(m.State.Hand[m.PubKey])-1]
 			}
 		case "-":
-			if m.MeldLen > 0 {
-				m.MeldLen--
+			if m.MeldLen[m.MeldID] > 0 {
+				m.MeldLen[m.MeldID]--
 			}
 		case "+", "=":
-			if m.MeldLen < 13 {
-				m.MeldLen++
+			if m.MeldLen[m.MeldID] < 13 {
+				m.MeldLen[m.MeldID]++
+			}
+		case "left":
+			if m.MeldID > 0 {
+				m.MeldID--
+			}
+		case "right":
+			if m.MeldID < len(m.MeldLen) {
+				m.MeldID++
 			}
 		}
+
 	}
 	return m, nil
 }
@@ -113,19 +123,19 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.meldlen: %d\n m.handlen %d\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.MeldLen, m.HandLen)
+	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.meldlen: %d\n m.handlen %d\n m.meldid %d\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.MeldLen, m.HandLen, m.MeldID)
 
 	var meldBuilder [][]*lipgloss.Layer
 
 	var meld []string
 
-	for j := 0; j < 4; j++ {
+	for j := 0; j < len(m.MeldLen); j++ {
 		meldBuilder = append(meldBuilder, []*lipgloss.Layer{})
-		for i := 1; i < m.MeldLen+1; i++ {
-			if i == m.MeldLen {
-				meldBuilder[j] = append(meldBuilder[j], card.CardLayer(card.SuitMap[j], strconv.Itoa(i), m.Bg))
+		for i := 1; i < m.MeldLen[j]+1; i++ {
+			if i == m.MeldLen[j] {
+				meldBuilder[j] = append(meldBuilder[j], card.CardLayer(card.SuitMap[j%4], strconv.Itoa(i), m.Bg))
 			} else {
-				meldBuilder[j] = append(meldBuilder[j], card.HalfCardLayer(false, card.SuitMap[j], strconv.Itoa(i), m.Bg))
+				meldBuilder[j] = append(meldBuilder[j], card.HalfCardLayer(false, card.SuitMap[j%4], strconv.Itoa(i), m.Bg))
 			}
 		}
 
