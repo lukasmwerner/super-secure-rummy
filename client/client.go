@@ -18,6 +18,7 @@ var (
 
 type Model struct {
 	PubKey          string
+	GameID          uint64
 	Term            string
 	Width           int
 	Height          int
@@ -27,13 +28,23 @@ type Model struct {
 	Quit_text_style lipgloss.Style
 	Help            bool
 	State           *game.State
+	UpdateChan      chan struct{}
 	MeldID          int
-	MeldLen         []int
 	HandLen         int
 	//state           sessionState
 }
 
+type StateUpdateMsg struct{}
+
+func waitForUpdate(c chan struct{}) tea.Cmd {
+	return func() tea.Msg {
+		<-c
+		return StateUpdateMsg{}
+	}
+}
+
 func (m Model) Init() tea.Cmd {
+	m.State.Mu.Lock()
 	m.State.Hand[m.PubKey] = []*lipgloss.Layer{}
 	m.HandLen = 7
 	// init game state with data
@@ -43,14 +54,19 @@ func (m Model) Init() tea.Cmd {
 
 		m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
 	}
+	m.State.Mu.Unlock()
+	m.State.Notify()
 
 	return tea.Batch(
 		tea.RequestBackgroundColor,
+		waitForUpdate(m.UpdateChan),
 	)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case StateUpdateMsg:
+		return m, waitForUpdate(m.UpdateChan)
 	case tea.ColorProfileMsg:
 		m.Color_profile = msg.String()
 	case tea.BackgroundColorMsg:
@@ -76,29 +92,47 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.HandLen < 12 {
 				m.HandLen++
 				c := card.HalfCardLayer(false, card.SuitMap[rand.Intn(4)], strconv.Itoa(rand.Intn(13)+1), m.Bg)
+				m.State.Mu.Lock()
 				m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
+				m.State.Mu.Unlock()
+				m.State.Notify()
 			}
 		case "down":
 			if m.HandLen > 0 {
 				m.HandLen--
+				m.State.Mu.Lock()
 				m.State.Hand[m.PubKey] = m.State.Hand[m.PubKey][:len(m.State.Hand[m.PubKey])-1]
+				m.State.Mu.Unlock()
+				m.State.Notify()
 			}
 		case "-":
-			if m.MeldLen[m.MeldID] > 0 {
-				m.MeldLen[m.MeldID]--
+			m.State.Mu.Lock()
+			if m.State.MeldLen[m.MeldID] > 0 {
+				m.State.MeldLen[m.MeldID]--
+				m.State.Mu.Unlock()
+				m.State.Notify()
+			} else {
+				m.State.Mu.Unlock()
 			}
 		case "+", "=":
-			if m.MeldLen[m.MeldID] < 13 {
-				m.MeldLen[m.MeldID]++
+			m.State.Mu.Lock()
+			if m.State.MeldLen[m.MeldID] < 13 {
+				m.State.MeldLen[m.MeldID]++
+				m.State.Mu.Unlock()
+				m.State.Notify()
+			} else {
+				m.State.Mu.Unlock()
 			}
 		case "left":
 			if m.MeldID > 0 {
 				m.MeldID--
 			}
 		case "right":
-			if m.MeldID < len(m.MeldLen) {
+			m.State.Mu.Lock()
+			if m.MeldID < len(m.State.MeldLen)-1 {
 				m.MeldID++
 			}
+			m.State.Mu.Unlock()
 		}
 
 	}
@@ -123,16 +157,17 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.meldlen: %d\n m.handlen %d\n m.meldid %d\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.MeldLen, m.HandLen, m.MeldID)
+	m.State.Mu.Lock()
+	s := fmt.Sprintf("Game ID: %d | Players: %d\nHello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.meldlen: %d\n m.handlen %d\n m.meldid %d\n", m.GameID, len(m.State.Players), m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.State.MeldLen, m.HandLen, m.MeldID)
 
 	var meldBuilder [][]*lipgloss.Layer
 
 	var meld []string
 
-	for j := 0; j < len(m.MeldLen); j++ {
+	for j := 0; j < len(m.State.MeldLen); j++ {
 		meldBuilder = append(meldBuilder, []*lipgloss.Layer{})
-		for i := 1; i < m.MeldLen[j]+1; i++ {
-			if i == m.MeldLen[j] {
+		for i := 1; i < m.State.MeldLen[j]+1; i++ {
+			if i == m.State.MeldLen[j] {
 				meldBuilder[j] = append(meldBuilder[j], card.CardLayer(card.SuitMap[j%4], strconv.Itoa(i), m.Bg))
 			} else {
 				meldBuilder[j] = append(meldBuilder[j], card.HalfCardLayer(false, card.SuitMap[j%4], strconv.Itoa(i), m.Bg))
@@ -150,6 +185,7 @@ func (m Model) View() tea.View {
 	hand := lipgloss.NewCompositor(
 		IMap(m.State.Hand[m.PubKey], func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
 	)
+	m.State.Mu.Unlock()
 
 	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dx()) / 2)
 	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), hand.Render())

@@ -24,7 +24,7 @@ import (
 	"github.com/lukasmwerner/super-secure-rummy/game"
 )
 
-var states = make(map[uint64]*game.State)
+var gm = game.NewGameManager()
 
 func main() {
 
@@ -35,16 +35,6 @@ func main() {
 	port := os.Getenv("RUMMY_PORT")
 	if port == "" {
 		port = "23234"
-	}
-
-	// Dunno if this is the right spot but fuckit we ball
-	states[1234] = new(game.State)
-	*states[1234] = game.State{
-		Hand:    map[string][]*lipgloss.Layer{},
-		Discard: []*lipgloss.Layer{},
-		Draw:    []*lipgloss.Layer{},
-		Melds:   map[string][]*lipgloss.Layer{},
-		Turn:    "",
 	}
 
 	s, err := wish.NewServer(
@@ -90,22 +80,24 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 
 	pubKey := s.PublicKey()
+	pubKeyHex := hex.EncodeToString(pubKey.Marshal())
 
 	// pubBytes := pubKey.Marshal()
 
-	var meld = make([]int, 12)
+	gameState, gameID, updateChan := gm.GetOrCreateGame(pubKeyHex)
 
 	t := client.Model{
 		Bg:              "dark",
-		PubKey:          hex.EncodeToString(pubKey.Marshal()),
+		PubKey:          pubKeyHex,
 		Term:            pty.Term,
 		Width:           pty.Window.Width,
 		Height:          pty.Window.Height,
 		Text_style:      lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
 		Quit_text_style: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
 		Help:            false,
-		State:           states[1234],
-		MeldLen:         meld,
+		State:           gameState,
+		UpdateChan:      updateChan,
+		GameID:          gameID,
 		HandLen:         7,
 	}
 
