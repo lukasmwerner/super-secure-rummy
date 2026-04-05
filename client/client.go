@@ -166,11 +166,11 @@ func (m Model) View() tea.View {
 	if m.FocusTarget == 0 { // Hand
 		handRender = borderStyle.Render(hand.Render())
 	} else if m.FocusTarget == 1 { // Draw
-		meldsRender = borderStyle.Render(stacks)
+
 	} else if m.FocusTarget == 2 { // Discard
 
 	} else if m.FocusTarget == 3 { // Melds
-
+		meldsRender = borderStyle.Render(stacks)
 	}
 
 	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dx()) / 2)
