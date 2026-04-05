@@ -26,7 +26,7 @@ type Model struct {
 	Text_style      lipgloss.Style
 	Quit_text_style lipgloss.Style
 	Help            bool
-	State           game.State
+	State           *game.State
 	MeldID          int
 	MeldLen         []int
 	HandLen         int

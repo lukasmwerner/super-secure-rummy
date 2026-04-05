@@ -24,7 +24,7 @@ import (
 	"github.com/lukasmwerner/super-secure-rummy/game"
 )
 
-var states = map[uint64]game.State{}
+var states = make(map[uint64]*game.State)
 
 func main() {
 
@@ -35,6 +35,16 @@ func main() {
 	port := os.Getenv("RUMMY_PORT")
 	if port == "" {
 		port = "23234"
+	}
+
+	// Dunno if this is the right spot but fuckit we ball
+	states[1234] = new(game.State)
+	*states[1234] = game.State{
+		Hand:    map[string][]*lipgloss.Layer{},
+		Discard: []*lipgloss.Layer{},
+		Draw:    []*lipgloss.Layer{},
+		Melds:   map[string][]*lipgloss.Layer{},
+		Turn:    "",
 	}
 
 	s, err := wish.NewServer(
@@ -82,14 +92,6 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	pubKey := s.PublicKey()
 
 	// pubBytes := pubKey.Marshal()
-
-	states[1234] = game.State{
-		Hand:    map[string][]*lipgloss.Layer{},
-		Discard: []*lipgloss.Layer{},
-		Draw:    []*lipgloss.Layer{},
-		Melds:   map[string][]*lipgloss.Layer{},
-		Turn:    "",
-	}
 
 	var meld = make([]int, 12)
 
