@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"net"
@@ -10,9 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "charm.land/bubbles/v2"
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"charm.land/log/v2"
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/activeterm"
@@ -24,10 +23,7 @@ import (
 	"github.com/lukasmwerner/super-secure-rummy/game"
 )
 
-var states = make(map[uint64]*game.State)
-
 func main() {
-
 	host := os.Getenv("RUMMY_HOST")
 	if host == "" {
 		host = "localhost"
@@ -37,30 +33,27 @@ func main() {
 		port = "23234"
 	}
 
-	// Dunno if this is the right spot but fuckit we ball
-	states[1234] = new(game.State)
-	*states[1234] = game.State{
-		Hand:    map[string][]*lipgloss.Layer{},
-		Discard: []*lipgloss.Layer{},
-		Draw:    []*lipgloss.Layer{},
-		Melds:   map[string][]*lipgloss.Layer{},
-		Turn:    "",
-	}
+	// Create the game hub and start its event loop
+	hub := game.NewHub(2, 4)
+	go hub.Run()
 
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
-			return true
+			return true // Accept all public keys
 		}),
 		ssh.AllocatePty(),
 		wish.WithMiddleware(
-			bubbletea.Middleware(teaHandler),
+			// Use MiddlewareWithProgramHandler so we get access to *tea.Program
+			// for wiring hub→client snapshot delivery via p.Send()
+			bubbletea.MiddlewareWithProgramHandler(makeProgramHandler(hub)),
 			activeterm.Middleware(),
 			logging.Middleware(),
 		),
 	)
 	if err != nil {
 		log.Error("Could not start server", "error", err)
+		os.Exit(1)
 	}
 
 	done := make(chan os.Signal, 1)
@@ -81,35 +74,55 @@ func main() {
 	defer cancel()
 
 	err = s.Shutdown(ctx)
-	if err != nil && errors.Is(err, ssh.ErrServerClosed) {
+	if err != nil && !errors.Is(err, ssh.ErrServerClosed) {
 		log.Error("Could not stop server", "error", err)
 	}
 }
 
-func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	pty, _, _ := s.Pty()
+// makeProgramHandler returns a ProgramHandler that creates a tea.Program
+// and wires the PlayerConn.Send to p.Send before the program runs.
+func makeProgramHandler(hub *game.Hub) bubbletea.ProgramHandler {
+	return func(s ssh.Session) *tea.Program {
+		pty, _, _ := s.Pty()
+		playerID := fingerprint(s.PublicKey())
 
-	pubKey := s.PublicKey()
+		log.Info("Player connected", "id", playerID[:8], "term", pty.Term)
 
-	// pubBytes := pubKey.Marshal()
+		conn := &game.PlayerConn{
+			ID:   playerID,
+			Name: playerID[:8],
+		}
 
-	var meld = make([]int, 12)
+		model := client.Model{
+			PlayerID: playerID,
+			Width:    pty.Window.Width,
+			Height:   pty.Window.Height,
+			Bg:       "dark",
+			Hub:      hub,
+			Conn:     conn,
+			Focus:    client.FocusHand,
+			Selected: make(map[int]bool),
+		}
 
-	t := client.Model{
-		Bg:              "dark",
-		PubKey:          hex.EncodeToString(pubKey.Marshal()),
-		Term:            pty.Term,
-		Width:           pty.Window.Width,
-		Height:          pty.Window.Height,
-		Text_style:      lipgloss.NewStyle().Foreground(lipgloss.Color("10")),
-		Quit_text_style: lipgloss.NewStyle().Foreground(lipgloss.Color("8")),
-		Help:            false,
-		State:           states[1234],
-		MeldLen:         meld,
-		HandLen:         7,
-		HandID:          0,
-		FocusTarget:     0,
+		// Create the program with wish's I/O options
+		p := tea.NewProgram(model, bubbletea.MakeOptions(s)...)
+
+		// Wire the Send function — tea.Program.Send is goroutine-safe.
+		// The Hub will call this to inject GameSnapshotMsg into this player's
+		// BubbleTea event loop.
+		conn.Send = func(msg interface{}) {
+			p.Send(msg)
+		}
+
+		// Register with the hub now that Send is wired
+		hub.Register <- conn
+
+		return p
 	}
+}
 
-	return t, []tea.ProgramOption{}
+// fingerprint creates a hex fingerprint of an SSH public key.
+func fingerprint(key ssh.PublicKey) string {
+	hash := sha256.Sum256(key.Marshal())
+	return hex.EncodeToString(hash[:])
 }

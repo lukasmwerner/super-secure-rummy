@@ -26,17 +26,24 @@ type Card struct {
 	Rank string
 }
 
+// CardHighlight indicates visual highlighting for a card.
+type CardHighlight int
+
+const (
+	HighlightNone     CardHighlight = iota
+	HighlightCursor                 // Bright cyan border — shows which card the cursor is on
+	HighlightSelected               // Bright yellow border — shows which cards are selected for melding
+)
+
 var (
-	halfCardBorder = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder(), true, true, false, true).
-			Width(width + 2)
-	fullCardBorder = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder())
 	redCard = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#931B29"))
 
 	blackText = lipgloss.Color("#000000")
 	whiteText = lipgloss.Color("#ffffff")
+
+	cursorBorderColor   = lipgloss.Color("#00FFFF") // Cyan
+	selectedBorderColor = lipgloss.Color("#FFD700") // Gold
 )
 
 // Returns the matching color to whatever the background is set to
@@ -47,7 +54,32 @@ func adaptiveColor(bg string, light color.Color, dark color.Color) color.Color {
 	return light
 }
 
-func cardDesign(s Suit, rank string, bg string) string {
+// makeBorders creates border styles with optional highlight coloring.
+func makeFullBorder(highlight CardHighlight) lipgloss.Style {
+	style := lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	switch highlight {
+	case HighlightCursor:
+		style = style.BorderForeground(cursorBorderColor)
+	case HighlightSelected:
+		style = style.BorderForeground(selectedBorderColor)
+	}
+	return style
+}
+
+func makeHalfBorder(highlight CardHighlight) lipgloss.Style {
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder(), true, true, false, true).
+		Width(width + 2)
+	switch highlight {
+	case HighlightCursor:
+		style = style.BorderForeground(cursorBorderColor)
+	case HighlightSelected:
+		style = style.BorderForeground(selectedBorderColor)
+	}
+	return style
+}
+
+func cardDesign(s Suit, rank string, bg string, highlight CardHighlight) string {
 	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
@@ -65,10 +97,10 @@ func cardDesign(s Suit, rank string, bg string) string {
 	right = lipgloss.JoinVertical(lipgloss.Right, right, style.Render(rank))
 
 	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, right)
-	return fullCardBorder.Render(contents)
+	return makeFullBorder(highlight).Render(contents)
 }
 
-func halfCardDesign(active bool, s Suit, rank string, bg string) string {
+func halfCardDesign(active bool, s Suit, rank string, bg string, highlight CardHighlight) string {
 	style := lipgloss.NewStyle().Foreground(adaptiveColor(bg, blackText, whiteText))
 	if s == Diamond || s == Heart {
 		style = redCard
@@ -87,15 +119,15 @@ func halfCardDesign(active bool, s Suit, rank string, bg string) string {
 	filler := lipgloss.NewStyle().Width(width - 2 - len(string(rank))).Render("")
 
 	contents := lipgloss.JoinHorizontal(lipgloss.Center, left, filler, " ")
-	return halfCardBorder.Render(contents)
+	return makeHalfBorder(highlight).Render(contents)
 }
 
-func CardLayer(s Suit, rank string, bg string) *lipgloss.Layer {
-	return lipgloss.NewLayer(cardDesign(s, rank, bg))
+func CardLayer(s Suit, rank string, bg string, highlight CardHighlight) *lipgloss.Layer {
+	return lipgloss.NewLayer(cardDesign(s, rank, bg, highlight))
 }
 
-func HalfCardLayer(active bool, s Suit, rank string, bg string) *lipgloss.Layer {
-	return lipgloss.NewLayer(halfCardDesign(active, s, rank, bg))
+func HalfCardLayer(active bool, s Suit, rank string, bg string, highlight CardHighlight) *lipgloss.Layer {
+	return lipgloss.NewLayer(halfCardDesign(active, s, rank, bg, highlight))
 }
 
 func DrawPile() *lipgloss.Layer {
