@@ -107,6 +107,8 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		State:           states[1234],
 		MeldLen:         meld,
 		HandLen:         7,
+		HandID:          0,
+		FocusTarget:     0,
 	}
 
 	return t, []tea.ProgramOption{}

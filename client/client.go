@@ -16,6 +16,7 @@ var (
 	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 )
 
+// Focus Target is which element (hand, discard, draw, or melds) is currently selected
 type Model struct {
 	PubKey          string
 	Term            string
@@ -30,15 +31,17 @@ type Model struct {
 	MeldID          int
 	MeldLen         []int
 	HandLen         int
-	//state           sessionState
+	HandID          int
+	FocusTarget     int
 }
+
+// For conversion from FocusTarget to Text
+var FocusTargetMap = []string{"Hand", "Draw", "Discard", "Melds"}
 
 func (m Model) Init() tea.Cmd {
 	m.State.Hand[m.PubKey] = []*lipgloss.Layer{}
 	m.HandLen = 7
-	// init game state with data
 	for i := 0; i < 7; i++ {
-		// card.HalfCardLayer(false, card.SuitMap[j], strconv.Itoa(i), m.Bg)
 		c := card.HalfCardLayer(false, card.SuitMap[rand.Intn(4)], strconv.Itoa(rand.Intn(13)+1), m.Bg)
 
 		m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], c)
@@ -99,6 +102,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.MeldID < len(m.MeldLen) {
 				m.MeldID++
 			}
+		case "tab":
+			if m.FocusTarget < 3 {
+				m.FocusTarget++
+			} else {
+				m.FocusTarget = 0
+			}
 		}
 
 	}
@@ -123,7 +132,7 @@ func (m Model) View() tea.View {
 		return v
 	}
 
-	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.meldlen: %d\n m.handlen %d\n m.meldid %d\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.MeldLen, m.HandLen, m.MeldID)
+	s := fmt.Sprintf("Hello %s\nYour term is %s\nYour window size is %dx%d\nBackground: %s\nColor Profile: %s\n m.meldlen: %d\n m.handlen %d\n m.meldid %d\n m.FocusTarget %s\n", m.PubKey, m.Term, m.Width, m.Height, m.Bg, m.Color_profile, m.MeldLen, m.HandLen, m.MeldID, FocusTargetMap[m.FocusTarget])
 
 	var meldBuilder [][]*lipgloss.Layer
 
@@ -150,11 +159,25 @@ func (m Model) View() tea.View {
 	hand := lipgloss.NewCompositor(
 		IMap(m.State.Hand[m.PubKey], func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
 	)
+	handRender := hand.Render()
+	meldsRender := stacks
+	borderStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+
+	if m.FocusTarget == 0 { // Hand
+		handRender = borderStyle.Render(hand.Render())
+	} else if m.FocusTarget == 1 { // Draw
+		meldsRender = borderStyle.Render(stacks)
+	} else if m.FocusTarget == 2 { // Discard
+
+	} else if m.FocusTarget == 3 { // Melds
+
+	}
 
 	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dx()) / 2)
-	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), hand.Render())
 
-	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks +
+	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), handRender)
+
+	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + meldsRender +
 		"\n\n" + centerHand)
 	v.AltScreen = true
 	return v
