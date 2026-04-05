@@ -378,6 +378,17 @@ func (m Model) handleAction() (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleGameOverKey(key string) (tea.Model, tea.Cmd) {
+	switch key {
+	case "n", "enter":
+		// Request new game — returns everyone to lobby
+		return m, func() tea.Msg {
+			m.Hub.Actions <- game.GameAction{
+				PlayerID: m.PlayerID,
+				Type:     game.ActionNewGame,
+			}
+			return nil
+		}
+	}
 	return m, nil
 }
 
@@ -735,7 +746,7 @@ func (m Model) viewGameOver() tea.View {
 		sb.WriteString(fmt.Sprintf("  %s%s: %d points%s\n", marker, name, p.Score, you))
 	}
 
-	sb.WriteString(helpStyle.Render("\n\nPress [q] to quit"))
+	sb.WriteString(helpStyle.Render("\n\nPress [n] or [enter] for new game · [q] to quit"))
 
 	content := lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, sb.String())
 	v := tea.NewView(content)

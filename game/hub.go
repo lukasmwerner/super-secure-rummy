@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"sync"
 )
 
 // PlayerConn links a player's identity to their BubbleTea program's Send function.
@@ -24,7 +23,6 @@ type Hub struct {
 	players map[string]*PlayerConn
 	state   *GameState
 
-	mu         sync.RWMutex // Only protects player map reads for snapshot delivery
 	minPlayers int
 	maxPlayers int
 }
@@ -59,8 +57,13 @@ func (h *Hub) Run() {
 }
 
 func (h *Hub) handleRegister(conn *PlayerConn) {
-	// Check if this is a reconnecting player
-	if h.state != nil {
+	// If the game is over, reset state so a new lobby can form
+	if h.state != nil && h.state.GameOver {
+		h.state = nil
+	}
+
+	// Check if this is a reconnecting player to an active game
+	if h.state != nil && h.state.Started {
 		for i := range h.state.Players {
 			if h.state.Players[i].ID == conn.ID {
 				// Reconnecting — restore connection
@@ -70,15 +73,12 @@ func (h *Hub) handleRegister(conn *PlayerConn) {
 				return
 			}
 		}
-	}
-
-	// New player
-	if h.state != nil && h.state.Started {
-		// Game already in progress — can't join mid-game
+		// Game in progress and this player isn't part of it
 		conn.Send(GameErrorMsg{Error: "game already in progress"})
 		return
 	}
 
+	// Lobby phase — accept new players
 	if len(h.players) >= h.maxPlayers {
 		conn.Send(GameErrorMsg{Error: "game is full"})
 		return
@@ -102,9 +102,20 @@ func (h *Hub) handleUnregister(playerID string) {
 				break
 			}
 		}
-		h.broadcastSnapshots()
+
+		// If all players disconnected, reset everything for next session
+		if len(h.players) == 0 {
+			h.state = nil
+		} else {
+			h.broadcastSnapshots()
+		}
 	} else {
-		h.broadcastLobby()
+		// Still in lobby
+		if len(h.players) == 0 {
+			h.state = nil
+		} else {
+			h.broadcastLobby()
+		}
 	}
 }
 
@@ -112,6 +123,12 @@ func (h *Hub) handleAction(action GameAction) {
 	// Special action: start game
 	if action.Type == ActionStartGame {
 		h.handleStartGame(action.PlayerID)
+		return
+	}
+
+	// Special action: new game (from game over screen)
+	if action.Type == ActionNewGame {
+		h.handleNewGame(action.PlayerID)
 		return
 	}
 
@@ -129,9 +146,14 @@ func (h *Hub) handleAction(action GameAction) {
 }
 
 func (h *Hub) handleStartGame(requestingPlayer string) {
-	if h.state != nil && h.state.Started {
+	if h.state != nil && h.state.Started && !h.state.GameOver {
 		h.sendError(requestingPlayer, "game already started")
 		return
+	}
+
+	// If game is over, reset first
+	if h.state != nil && h.state.GameOver {
+		h.state = nil
 	}
 
 	if len(h.players) < h.minPlayers {
@@ -147,6 +169,12 @@ func (h *Hub) handleStartGame(requestingPlayer string) {
 
 	h.state = NewGameState(ids)
 	h.broadcastSnapshots()
+}
+
+// handleNewGame resets the game and returns all connected players to the lobby.
+func (h *Hub) handleNewGame(requestingPlayer string) {
+	h.state = nil
+	h.broadcastLobby()
 }
 
 // broadcastSnapshots sends a personalized GameSnapshot to every connected player.
@@ -188,6 +216,7 @@ func (h *Hub) sendError(playerID string, msg string) {
 // --- Additional action type for starting a game ---
 
 const ActionStartGame ActionType = 100
+const ActionNewGame ActionType = 101
 
 // --- Message types sent from Hub to clients ---
 
