@@ -14,4 +14,5 @@ type State struct {
 	Discard []*lipgloss.Layer
 	Draw    []*lipgloss.Layer
 	Melds   map[string][]*lipgloss.Layer
+	Turn    string
 }

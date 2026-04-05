@@ -88,6 +88,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		Discard: []*lipgloss.Layer{},
 		Draw:    []*lipgloss.Layer{},
 		Melds:   map[string][]*lipgloss.Layer{},
+		Turn:    "",
 	}
 
 	var meld = make([]int, 12)

@@ -66,6 +66,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "ctrl+c":
 			if !m.Help {
+
 				return m, tea.Quit
 			}
 			m.Help = false
@@ -106,7 +107,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() tea.View {
 
-	//model := m.currentFocusedModel()
 	if m.Help {
 		vp := viewport.New()
 		vp.SetWidth(m.Width / 2)
@@ -115,7 +115,7 @@ func (m Model) View() tea.View {
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("62")).
 			PaddingRight(2)
-		vp.SetContent(fmt.Sprintf("Welcome to Secure Rummy!\nHere are the basic commands:\n (+/-): change stack heights\n (up/down): change hand card count\n"))
+		vp.SetContent(fmt.Sprintf("Welcome to Secure Rummy!\nHere are the basic commands:\n (+/-): change stack heights\n (up/down): change hand card count\n (left/right): change which stack is selected"))
 
 		v := tea.NewView(lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, vp.View()))
 		v.AltScreen = true
@@ -147,26 +147,12 @@ func (m Model) View() tea.View {
 
 	stacks := lipgloss.JoinHorizontal(lipgloss.Top, meld...)
 
-	//initialLen := len(m.State.Hand[m.PubKey])
-
-	//for i := 0; i < m.HandLen; i++ {
-	//	m.State.Hand[m.PubKey] = append(m.State.Hand[m.PubKey], card.HalfCardLayer(false, card.SuitMap[rand.Intn(4)], strconv.Itoa(rand.Intn(13)+1), m.Bg))
-	//}
-
-	//hand_cards := []*lipgloss.Layer{
-	//	card.HalfCardLayer(false, card.Club, "A", m.Bg).Y(1),
-	//	card.HalfCardLayer(true, card.Heart, "2", m.Bg).Y(0),
-	//	card.HalfCardLayer(false, card.Diamond, "J", m.Bg).Y(1),
-	//	card.HalfCardLayer(false, card.Spade, "4", m.Bg).Y(1),
-	//}
-
 	hand := lipgloss.NewCompositor(
 		IMap(m.State.Hand[m.PubKey], func(i int, l *lipgloss.Layer) *lipgloss.Layer { return l.X(i * 3).Z(i) })...,
 	)
 
 	leftPad := lipgloss.NewStyle().Width((m.Width - hand.Bounds().Dx()) / 2)
 	centerHand := lipgloss.JoinHorizontal(lipgloss.Bottom, leftPad.Render(" "), hand.Render())
-	// >>>>>>> main
 
 	v := tea.NewView(m.Text_style.Render(s) + "\n\n" + stacks +
 		"\n\n" + centerHand)
