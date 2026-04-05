@@ -28,6 +28,7 @@ const (
 	ScreenLobby Screen = iota
 	ScreenGame
 	ScreenGameOver
+	ScreenHelp
 )
 
 // FocusArea represents which area of the game UI is focused.
@@ -68,6 +69,9 @@ type Model struct {
 	// Card selection for melding
 	Selected   map[int]bool // Indices of selected cards in hand
 	SelectMode bool         // Whether we're in multi-select mode for melding
+
+	// Help screen
+	PrevScreen Screen // Screen to return to when closing help
 
 	// Connection tracking
 	Conn *game.PlayerConn
@@ -136,9 +140,20 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Global keys
 	switch key {
 	case "q", "ctrl+c":
-		// Unregister from hub before quitting
+		if m.Screen == ScreenHelp {
+			m.Screen = m.PrevScreen
+			return m, nil
+		}
 		m.Hub.Unregister <- m.PlayerID
 		return m, tea.Quit
+	case "?":
+		if m.Screen == ScreenHelp {
+			m.Screen = m.PrevScreen
+		} else {
+			m.PrevScreen = m.Screen
+			m.Screen = ScreenHelp
+		}
+		return m, nil
 	}
 
 	switch m.Screen {
@@ -148,6 +163,11 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleGameKey(key)
 	case ScreenGameOver:
 		return m.handleGameOverKey(key)
+	case ScreenHelp:
+		if key == "escape" {
+			m.Screen = m.PrevScreen
+			return m, nil
+		}
 	}
 	return m, nil
 }
@@ -371,6 +391,8 @@ func (m Model) View() tea.View {
 		return m.viewGame()
 	case ScreenGameOver:
 		return m.viewGameOver()
+	case ScreenHelp:
+		return m.viewHelp()
 	}
 
 	v := tea.NewView("Loading...")
@@ -401,9 +423,97 @@ func (m Model) viewLobby() tea.View {
 	if len(m.LobbyPlayers) >= m.MinPlayers {
 		sb.WriteString(turnStyle.Render("\nPress [s] or [enter] to start the game!") + "\n")
 	}
-	sb.WriteString(helpStyle.Render("\nPress [q] to quit"))
+	sb.WriteString(helpStyle.Render("\nPress [q] to quit · [?] for help"))
 
 	content := lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, sb.String())
+	v := tea.NewView(content)
+	v.AltScreen = true
+	return v
+}
+
+func (m Model) viewHelp() tea.View {
+	divider := helpStyle.Render("─────────────────────────────────────────────────")
+
+	sections := []string{
+		titleStyle.Render("♠ ♥ Secure Rummy — Help ♦ ♣"),
+		"",
+		turnStyle.Render("GAME OVERVIEW"),
+		"Standard Rummy for 2-4 players over SSH.",
+		"Be the first to empty your hand by forming melds",
+		"(sets and runs) and discarding strategically.",
+		"",
+		divider,
+		"",
+		turnStyle.Render("MELDS"),
+		infoStyle.Render("  Set: ") + "3-4 cards of the same rank, different suits",
+		"        Example: 7♠ 7♥ 7♦",
+		"",
+		infoStyle.Render("  Run: ") + "3+ consecutive cards of the same suit",
+		"        Example: 4♥ 5♥ 6♥ 7♥",
+		"",
+		"  Ace is always low (A-2-3 is valid, Q-K-A is not).",
+		"",
+		infoStyle.Render("  Lay Off: ") + "Add a card to any existing meld on the table.",
+		"",
+		divider,
+		"",
+		turnStyle.Render("YOUR TURN"),
+		"  Each turn has three phases:",
+		"",
+		infoStyle.Render("  1. DRAW (required)"),
+		"     Draw one card from the deck or the discard pile.",
+		"",
+		infoStyle.Render("  2. MELD / LAY OFF (optional)"),
+		"     Lay down sets or runs from your hand.",
+		"     Add cards to existing melds on the table.",
+		"     You may do this multiple times per turn.",
+		"",
+		infoStyle.Render("  3. DISCARD (required)"),
+		"     Discard one card to end your turn.",
+		"     If you empty your hand, you win!",
+		"",
+		divider,
+		"",
+		turnStyle.Render("CONTROLS"),
+		"",
+		infoStyle.Render("  Navigation"),
+		"  [tab]        Cycle focus: Hand → Deck → Discard → Melds",
+		"  [←] [→]      Move cursor within the focused area",
+		"",
+		infoStyle.Render("  Drawing"),
+		"  [d]          Draw from the deck",
+		"  [enter]      Draw from the focused pile (Deck or Discard)",
+		"",
+		infoStyle.Render("  Melding"),
+		"  [space]      Select/deselect a card (gold highlight)",
+		"  [enter]      Meld selected cards (need 3+)",
+		"  [esc]        Cancel selection",
+		"",
+		infoStyle.Render("  Discarding"),
+		"  [x]          Discard the card under the cursor",
+		"  [enter]      Discard cursor card (when nothing selected)",
+		"",
+		infoStyle.Render("  Laying Off"),
+		"  [tab] to Melds, [←] [→] to pick a meld, [enter] to",
+		"  add the cursor card from your hand to that meld.",
+		"",
+		infoStyle.Render("  Other"),
+		"  [?]          Toggle this help screen",
+		"  [q]          Quit the game",
+		"",
+		divider,
+		"",
+		turnStyle.Render("SCORING"),
+		"  Winner scores 0. Losers score their remaining deadwood:",
+		"  Ace = 1  |  2-9 = face value  |  10, J, Q, K = 10",
+		"",
+		divider,
+		"",
+		helpStyle.Render("Press [?] or [esc] to return"),
+	}
+
+	body := strings.Join(sections, "\n")
+	content := lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, body)
 	v := tea.NewView(content)
 	v.AltScreen = true
 	return v
@@ -592,7 +702,7 @@ func (m Model) viewGame() tea.View {
 	}
 
 	// Help bar
-	sb.WriteString("\n\n" + helpStyle.Render("[tab] focus  [←→] navigate  [space] select  [enter] meld/confirm  [d] draw  [x] discard  [esc] cancel  [q] quit"))
+	sb.WriteString("\n\n" + helpStyle.Render("[tab] focus  [←→] navigate  [space] select  [enter] meld/confirm  [d] draw  [x] discard  [esc] cancel  [?] help  [q] quit"))
 
 	v := tea.NewView(sb.String())
 	v.AltScreen = true
