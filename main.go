@@ -114,8 +114,11 @@ func makeProgramHandler(hub *game.Hub) bubbletea.ProgramHandler {
 			p.Send(msg)
 		}
 
-		// Register with the hub now that Send is wired
-		hub.Register <- conn
+		// Ensure the player is unregistered if the SSH session drops or ends
+		go func() {
+			<-s.Context().Done()
+			hub.Unregister <- playerID
+		}()
 
 		return p
 	}

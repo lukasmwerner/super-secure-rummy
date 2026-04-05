@@ -78,9 +78,17 @@ type Model struct {
 }
 
 func (m Model) Init() tea.Cmd {
-	// Registration with the Hub happens in main.go's makeProgramHandler,
-	// before the program starts. Here we just detect terminal capabilities.
-	return tea.RequestBackgroundColor
+	// Send registration to the hub once the BubbleTea program is actually running.
+	// This ensures we don't drop the initial LobbyMsg.
+	registerCmd := func() tea.Msg {
+		m.Hub.Register <- m.Conn
+		return nil
+	}
+
+	return tea.Batch(
+		tea.RequestBackgroundColor,
+		registerCmd,
+	)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
